@@ -1,7 +1,14 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+import pytz
 import sys
 
-ADDRESS = 'Address'
+# Outstanding:
+# timezone conversion
+# Unicode validation
+# TotalDuration
+# Unicode replacement character
+# Add stderr warning
+# Confirm existing implementations are correct
 
 
 class CSV:
@@ -16,9 +23,6 @@ class CSV:
         for line in sys.stdin:
             self.rows.append(self.process_line(line.strip()))
 
-    def address_index(self):
-        return self.headers.index(ADDRESS)
-
     def process_line(self, line):
         start_seek_index = 0
         cols = []
@@ -28,7 +32,7 @@ class CSV:
 
             end_seek_index = line.index(',', start_seek_index)
 
-            if header == ADDRESS:
+            if header == AddressColumn.name:
                 if line[start_seek_index] == '"':
                     end_seek_index = line.find('"', start_seek_index + 1) + 1
 
@@ -63,12 +67,12 @@ class Column:
 class TimestampColumn(Column):
 
     def normalize(self):
-        timestamp = datetime.strptime(self.original_text, '%x %X %p')
-        self.normalized_text = timestamp.isoformat()
+        eastern_tz = pytz.timezone('America/New_York')
 
-    def process(self):
-        pass
+        timestamp = datetime.strptime(self.original_text, '%x %X %p') + timedelta(hours=3)
+        eastern_time = timestamp.replace(tzinfo=eastern_tz)
 
+        self.normalized_text = eastern_time.isoformat()
 
 
 class ZipColumn(Column):
@@ -78,6 +82,7 @@ class ZipColumn(Column):
 
 
 class AddressColumn(Column):
+    name = 'Address'
 
     def normalize(self):
         self.normalized_text = self.original_text
@@ -132,6 +137,7 @@ col_lookups = {
 
 
 csv = CSV()
-print csv.headers
+print ",".join(csv.headers)
+
 for row in csv.rows:
-    print [k.normalized_text for k in row]
+    print ",".join(map(str, [k.normalized_text for k in row]))
