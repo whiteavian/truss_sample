@@ -29,11 +29,14 @@ class CSV:
             if header == ADDRESS:
                 if line[start_seek_index] == '"':
                     end_seek_index = line.find('"', start_seek_index + 1) + 1
+                else:
+                    end_seek_index = line.index(',', start_seek_index)
             else:
                 end_seek_index = line.index(',', start_seek_index)
 
             col_class = col_lookups[header.lower()]
             col = col_class(line[start_seek_index:end_seek_index])
+            col.normalize()
             cols.append(col)
 
             start_seek_index = end_seek_index + 1
@@ -68,7 +71,7 @@ class TimestampColumn(Column):
 class ZipColumn(Column):
 
     def normalize(self):
-        pass
+        self.normalized_text = self.original_text.zfill(5)
 
 
 class AddressColumn(Column):
@@ -116,4 +119,4 @@ col_lookups = {
 csv = CSV()
 print csv.headers
 for row in csv.rows:
-    print [k.original_text for k in row]
+    print [k.normalized_text for k in row]
