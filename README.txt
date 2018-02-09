@@ -9,5 +9,8 @@ from the top level directory would be:
 
 cat sample.csv | python normalize_csv/normalize_csv.py > sample_normalized.csv
 
-Unicode validation with a stderr warning and TotalDuration are not yet
-implemented.
+To be implemented:
+Unicode validation with a stderr warning.
+
+Known bugs:
+TotalDuration of the final line is not normalized.
