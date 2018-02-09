@@ -165,8 +165,14 @@ col_lookups = {
 }
 
 
-csv = CSV()
-print ",".join(csv.headers)
+def main():
+    """Create a CSV object and print the normalizations to stout."""
+    csv = CSV()
+    print ",".join(csv.headers)
 
-for row in csv.rows:
-    print ",".join(map(str, [k.normalized_text for k in row]))
+    for row in csv.rows:
+        print ",".join(map(str, [k.normalized_text for k in row]))
+
+
+if __name__ == '__main__':
+    main()
