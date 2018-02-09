@@ -2,13 +2,6 @@ from datetime import datetime, timedelta
 import pytz
 import sys
 
-# Outstanding:
-# Unicode validation
-# TotalDuration
-# Unicode replacement character
-# Add stderr warning
-# Confirm existing implementations are correct
-
 
 class CSV:
     """Represent a CSV by headers and rows of Cell objects."""
@@ -30,15 +23,19 @@ class CSV:
         start_seek_index = 0
         cols = []
 
-        for i in range(len(self.headers) - 1):
+        for i in range(len(self.headers)):
             header = self.headers[i]
 
             # Split lines by commas, ignoring commas within quotes.
-            end_seek_index = line.index(',', start_seek_index)
+            # The final column ends at the end of the line, rather than a comma.
+            if i == len(self.headers) - 1:
+                end_seek_index = len(line)
+            else:
+                end_seek_index = line.index(',', start_seek_index)
 
-            if header == AddressCell.name:
-                if line[start_seek_index] == '"':
-                    end_seek_index = line.find('"', start_seek_index + 1) + 1
+                if header.lower() == AddressCell.column_name:
+                    if line[start_seek_index] == '"':
+                        end_seek_index = line.find('"', start_seek_index + 1) + 1
 
             col_class = col_lookups[header.lower()]
             col = col_class(line[start_seek_index:end_seek_index])
@@ -46,17 +43,26 @@ class CSV:
 
             start_seek_index = end_seek_index + 1
 
+        self.calculate_total_duration()
+
         return cols
+
+    def calculate_total_duration(self):
+        """Set total duration based on foo and bar durations."""
+        headers_lower = map(lambda h: h.lower(), self.headers)
+        foo_duration_index = headers_lower.index(FooBarDurationCell.foo_column_name)
+        bar_duration_index = headers_lower.index(FooBarDurationCell.bar_column_name)
+        total_duration_index = headers_lower.index(TotalDurationCell.column_name)
+
+        for row in self.rows:
+            foo_value = row[foo_duration_index].normalized_text
+            bar_value = row[bar_duration_index].normalized_text
+            row[total_duration_index].add_foo_bar(foo_value, bar_value)
 
 
 def process_headers(header_line):
     """Extract line headers as delimited by a comma."""
     return header_line.split(',')
-
-
-class Row:
-    def __init__(self):
-        pass
 
 
 class Cell:
@@ -81,6 +87,7 @@ class Cell:
 
 class TimestampCell(Cell):
     """Represent eastern time column cells."""
+    column_name = 'timestamp'
 
     def normalize(self):
         """Convert time from US/Pacific to US/Eastern in ISO-8601 format."""
@@ -94,6 +101,7 @@ class TimestampCell(Cell):
 
 class ZipCell(Cell):
     """Represent five digit US zip code column cells."""
+    column_name = 'zip'
 
     def normalize(self):
         """Left pad zip code with zeros if less than length five."""
@@ -102,7 +110,7 @@ class ZipCell(Cell):
 
 class AddressCell(Cell):
     """Represent user input address column cells."""
-    name = 'Address'
+    column_name = 'address'
 
     def normalize(self):
         """Perform no normalization additional to unicode validation."""
@@ -111,6 +119,8 @@ class AddressCell(Cell):
 
 class FooBarDurationCell(Cell):
     """Represent either FooDuration or BarDuration column cells."""
+    foo_column_name = 'fooduration'
+    bar_column_name = 'barduration'
 
     def normalize(self):
         """Convert duration to a floating point seconds format."""
@@ -131,13 +141,19 @@ class FooBarDurationCell(Cell):
 
 class TotalDurationCell(Cell):
     """Represent column cells as the sum of FooDuration and BarDuration."""
+    column_name = 'totalduration'
 
     def normalize(self):
-        pass
+        self.normalized_text = self.original_text
+
+    def add_foo_bar(self, foo_value, bar_value):
+        """Set normalized text to the sum of foo and bar column values."""
+        self.normalized_text = foo_value + bar_value
 
 
 class NotesCell(Cell):
     """Represent user input notes column cells."""
+    column_name = 'notes'
 
     def normalize(self):
         """Perform no normalization additional to unicode validation."""
@@ -146,6 +162,7 @@ class NotesCell(Cell):
 
 class NameCell(Cell):
     """Represent user name column cells."""
+    column_name = 'fullname'
 
     def normalize(self):
         """Convert the name to uppercase."""
@@ -154,14 +171,14 @@ class NameCell(Cell):
 
 # Lowercase column header name to child Cell classes.
 col_lookups = {
-    'timestamp': TimestampCell,
-    'zip': ZipCell,
-    'address': AddressCell,
-    'fooduration': FooBarDurationCell,
-    'barduration': FooBarDurationCell,
-    'totalduration': TotalDurationCell,
-    'fullname': NameCell,
-    'notes': NotesCell,
+    TimestampCell.column_name: TimestampCell,
+    ZipCell.column_name: ZipCell,
+    AddressCell.column_name: AddressCell,
+    FooBarDurationCell.bar_column_name: FooBarDurationCell,
+    FooBarDurationCell.foo_column_name: FooBarDurationCell,
+    TotalDurationCell.column_name: TotalDurationCell,
+    NameCell.column_name: NameCell,
+    NotesCell.column_name: NotesCell,
 }
 
 
