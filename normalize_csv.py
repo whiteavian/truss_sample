@@ -70,39 +70,50 @@ class Cell:
         self.normalize()
 
     def validate_unicode(self):
+        """Replace invalid unicode with the Unicode Replacement Character."""
+        # TODO
         pass
 
     def normalize(self):
-        pass
+        """Empty parent class normalize implementation to force child implementation."""
+        raise NotImplementedError
 
 
 class TimestampCell(Cell):
+    """Represent eastern time column cells."""
 
     def normalize(self):
-        eastern_tz = pytz.timezone('America/New_York')
-
+        """Convert time from US/Pacific to US/Eastern in ISO-8601 format."""
         timestamp = datetime.strptime(self.original_text, '%x %X %p') + timedelta(hours=3)
+
+        eastern_tz = pytz.timezone('US/Eastern')
         eastern_time = timestamp.replace(tzinfo=eastern_tz)
 
         self.normalized_text = eastern_time.isoformat()
 
 
 class ZipCell(Cell):
+    """Represent five digit US zip code column cells."""
 
     def normalize(self):
+        """Left pad zip code with zeros if less than length five."""
         self.normalized_text = self.original_text.zfill(5)
 
 
 class AddressCell(Cell):
+    """Represent user input address column cells."""
     name = 'Address'
 
     def normalize(self):
+        """Perform no normalization additional to unicode validation."""
         self.normalized_text = self.original_text
 
 
 class FooBarDurationCell(Cell):
+    """Represent either FooDuration or BarDuration column cells."""
 
     def normalize(self):
+        """Convert duration to a floating point seconds format."""
         end_index = self.original_text.index(':')
         hours = int(self.original_text[:end_index])
 
@@ -119,23 +130,29 @@ class FooBarDurationCell(Cell):
 
 
 class TotalDurationCell(Cell):
+    """Represent column cells as the sum of FooDuration and BarDuration."""
 
     def normalize(self):
         pass
 
 
 class NotesCell(Cell):
+    """Represent user input notes column cells."""
 
     def normalize(self):
+        """Perform no normalization additional to unicode validation."""
         self.normalized_text = self.original_text
 
 
 class NameCell(Cell):
+    """Represent user name column cells."""
 
     def normalize(self):
+        """Convert the name to uppercase."""
         self.normalized_text = self.original_text.upper()
 
 
+# Lowercase column header name to child Cell classes.
 col_lookups = {
     'timestamp': TimestampCell,
     'zip': ZipCell,
