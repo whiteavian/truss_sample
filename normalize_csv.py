@@ -10,7 +10,7 @@ class CSV:
         self.load()
 
     def load(self):
-        self.headers = process_headers(raw_input())
+        self.headers = process_headers(raw_input().strip())
 
         for line in sys.stdin:
             self.rows.append(self.process_line(line.strip()))
@@ -19,23 +19,30 @@ class CSV:
         return self.headers.index(ADDRESS)
 
     def process_line(self, line):
-        ai = self.address_index()
-        if ai == 0:
-            end_quote = line.find('"', 2)
-            second_split = line.split(',', end_quote + 1)
-        elif ai == len(self.headers) - 1:
+        start_seek_index = 0
+        end_seek_index = 0
+        cols = []
 
-        first_split = line.split(self.address_index())
-        # TODO put quoted string checks and balances in place.
-        to_split = first_split[-1]
+        for i in range(len(self.headers) - 1):
+            header = self.headers[i]
 
-        return first_split[:-1] + second_split
+            if header == ADDRESS:
+                if line[start_seek_index] == '"':
+                    end_seek_index = line.find('"', start_seek_index + 1) + 1
+            else:
+                end_seek_index = line.index(',', start_seek_index)
+
+            col_class = col_lookups[header.lower()]
+            col = col_class(line[start_seek_index:end_seek_index])
+            cols.append(col)
+
+            start_seek_index = end_seek_index + 1
+
+        return cols
 
 
 def process_headers(header_line):
     return header_line.split(',')
-
-
 
 
 class Row:
@@ -48,38 +55,65 @@ class Column:
         self.original_text = text
         self.normalized_text = ''
 
+    def normalize(self):
+        pass
+
 
 class TimestampColumn(Column):
-    def __init__(self, *args):
-        super(TimestampColumn, self).__init__(*args)
+
+    def normalize(self):
+        pass
 
 
 class ZipColumn(Column):
-    def __init__(self, *args):
-        super(ZipColumn, self).__init__(*args)
+
+    def normalize(self):
+        pass
 
 
 class AddressColumn(Column):
-    def __init__(self, *args):
-        super(AddressColumn, self).__init__(*args)
+
+    def normalize(self):
+        pass
 
 
 class FooBarDurationColumn(Column):
-    def __init__(self, *args):
-        super(FooBarDurationColumn, self).__init__(*args)
+
+    def normalize(self):
+        pass
 
 
 class TotalDurationColumn(Column):
-    def __init__(self, *args):
-        super(TotalDurationColumn, self).__init__(*args)
+
+    def normalize(self):
+        pass
 
 
 class NotesColumn(Column):
-    def __init__(self, *args):
-        super(NotesColumn, self).__init__(*args)
+
+    def normalize(self):
+        pass
+
+
+class NameColumn(Column):
+
+    def normalize(self):
+        pass
+
+
+col_lookups = {
+    'timestamp': TimestampColumn,
+    'zip': ZipColumn,
+    'address': AddressColumn,
+    'fooduration': FooBarDurationColumn,
+    'barduration': FooBarDurationColumn,
+    'totalduration': TotalDurationColumn,
+    'fullname': NameColumn,
+    'notes': NotesColumn,
+}
 
 
 csv = CSV()
 print csv.headers
 for row in csv.rows:
-    print row
+    print [k.original_text for k in row]
