@@ -1,3 +1,4 @@
+from datetime import datetime
 import sys
 
 ADDRESS = 'Address'
@@ -20,19 +21,16 @@ class CSV:
 
     def process_line(self, line):
         start_seek_index = 0
-        end_seek_index = 0
         cols = []
 
         for i in range(len(self.headers) - 1):
             header = self.headers[i]
 
+            end_seek_index = line.index(',', start_seek_index)
+
             if header == ADDRESS:
                 if line[start_seek_index] == '"':
                     end_seek_index = line.find('"', start_seek_index + 1) + 1
-                else:
-                    end_seek_index = line.index(',', start_seek_index)
-            else:
-                end_seek_index = line.index(',', start_seek_index)
 
             col_class = col_lookups[header.lower()]
             col = col_class(line[start_seek_index:end_seek_index])
@@ -65,7 +63,12 @@ class Column:
 class TimestampColumn(Column):
 
     def normalize(self):
+        timestamp = datetime.strptime(self.original_text, '%x %X %p')
+        self.normalized_text = timestamp.isoformat()
+
+    def process(self):
         pass
+
 
 
 class ZipColumn(Column):
@@ -77,13 +80,25 @@ class ZipColumn(Column):
 class AddressColumn(Column):
 
     def normalize(self):
-        pass
+        self.normalized_text = self.original_text
 
 
 class FooBarDurationColumn(Column):
 
     def normalize(self):
-        pass
+        end_index = self.original_text.index(':')
+        hours = int(self.original_text[:end_index])
+
+        start_index = end_index + 1
+        end_index = self.original_text.index(':', start_index)
+        minutes = int(self.original_text[start_index:end_index])
+
+        start_index = end_index + 1
+        seconds = float(self.original_text[start_index:])
+
+        duration = hours * 60 * 60 + minutes * 60 + seconds
+
+        self.normalized_text = duration
 
 
 class TotalDurationColumn(Column):
@@ -95,13 +110,13 @@ class TotalDurationColumn(Column):
 class NotesColumn(Column):
 
     def normalize(self):
-        pass
+        self.normalized_text = self.original_text
 
 
 class NameColumn(Column):
 
     def normalize(self):
-        pass
+        self.normalized_text = self.original_text.upper()
 
 
 col_lookups = {
