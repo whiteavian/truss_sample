@@ -1,4 +1,5 @@
 This project reads CSV input from stdin and prints a normalized CSV to stdout.
+The assumed operating system is Ubuntu 16.04 LTS.
 To setup, within a virtual environment, run
 
 python setup.py develop
