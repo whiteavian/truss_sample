@@ -3,7 +3,6 @@ import pytz
 import sys
 
 # Outstanding:
-# timezone conversion
 # Unicode validation
 # TotalDuration
 # Unicode replacement character
@@ -12,33 +11,37 @@ import sys
 
 
 class CSV:
+    """Represent a CSV by headers and rows of Cell objects."""
+
     def __init__(self):
         self.headers = []
         self.rows = []
         self.load()
 
     def load(self):
+        """Load CSV data from stdin."""
         self.headers = process_headers(raw_input().strip())
 
         for line in sys.stdin:
             self.rows.append(self.process_line(line.strip()))
 
     def process_line(self, line):
+        """Create Cell objects for each line column."""
         start_seek_index = 0
         cols = []
 
         for i in range(len(self.headers) - 1):
             header = self.headers[i]
 
+            # Split lines by commas, ignoring commas within quotes.
             end_seek_index = line.index(',', start_seek_index)
 
-            if header == AddressColumn.name:
+            if header == AddressCell.name:
                 if line[start_seek_index] == '"':
                     end_seek_index = line.find('"', start_seek_index + 1) + 1
 
             col_class = col_lookups[header.lower()]
             col = col_class(line[start_seek_index:end_seek_index])
-            col.normalize()
             cols.append(col)
 
             start_seek_index = end_seek_index + 1
@@ -47,6 +50,7 @@ class CSV:
 
 
 def process_headers(header_line):
+    """Extract line headers as delimited by a comma."""
     return header_line.split(',')
 
 
@@ -55,16 +59,24 @@ class Row:
         pass
 
 
-class Column:
+class Cell:
+    """Generic class for representing a row/column cell."""
+
     def __init__(self, text):
         self.original_text = text
         self.normalized_text = ''
+
+        self.validate_unicode()
+        self.normalize()
+
+    def validate_unicode(self):
+        pass
 
     def normalize(self):
         pass
 
 
-class TimestampColumn(Column):
+class TimestampCell(Cell):
 
     def normalize(self):
         eastern_tz = pytz.timezone('America/New_York')
@@ -75,20 +87,20 @@ class TimestampColumn(Column):
         self.normalized_text = eastern_time.isoformat()
 
 
-class ZipColumn(Column):
+class ZipCell(Cell):
 
     def normalize(self):
         self.normalized_text = self.original_text.zfill(5)
 
 
-class AddressColumn(Column):
+class AddressCell(Cell):
     name = 'Address'
 
     def normalize(self):
         self.normalized_text = self.original_text
 
 
-class FooBarDurationColumn(Column):
+class FooBarDurationCell(Cell):
 
     def normalize(self):
         end_index = self.original_text.index(':')
@@ -106,33 +118,33 @@ class FooBarDurationColumn(Column):
         self.normalized_text = duration
 
 
-class TotalDurationColumn(Column):
+class TotalDurationCell(Cell):
 
     def normalize(self):
         pass
 
 
-class NotesColumn(Column):
+class NotesCell(Cell):
 
     def normalize(self):
         self.normalized_text = self.original_text
 
 
-class NameColumn(Column):
+class NameCell(Cell):
 
     def normalize(self):
         self.normalized_text = self.original_text.upper()
 
 
 col_lookups = {
-    'timestamp': TimestampColumn,
-    'zip': ZipColumn,
-    'address': AddressColumn,
-    'fooduration': FooBarDurationColumn,
-    'barduration': FooBarDurationColumn,
-    'totalduration': TotalDurationColumn,
-    'fullname': NameColumn,
-    'notes': NotesColumn,
+    'timestamp': TimestampCell,
+    'zip': ZipCell,
+    'address': AddressCell,
+    'fooduration': FooBarDurationCell,
+    'barduration': FooBarDurationCell,
+    'totalduration': TotalDurationCell,
+    'fullname': NameCell,
+    'notes': NotesCell,
 }
 
 
